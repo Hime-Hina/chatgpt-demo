@@ -1,7 +1,7 @@
 import { createParser, ParsedEvent, ReconnectInterval } from 'eventsource-parser'
 import type { ChatMessage } from '@/types'
 
-export const generatePayload = (apiKey: string, messages: ChatMessage[]): RequestInit => ({
+export const generatePayload = (apiKey: string, messages: ChatMessage[], temperature: number): RequestInit => ({
   headers: {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${apiKey}`,
@@ -10,7 +10,7 @@ export const generatePayload = (apiKey: string, messages: ChatMessage[]): Reques
   body: JSON.stringify({
     model: 'gpt-3.5-turbo',
     messages,
-    temperature: 0.6,
+    temperature,
     stream: true,
   }),
 })

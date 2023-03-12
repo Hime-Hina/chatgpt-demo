@@ -13,16 +13,22 @@ export default () => {
   const [messageList, setMessageList] = createSignal<ChatMessage[]>([])
   const [currentAssistantMessage, setCurrentAssistantMessage] = createSignal('')
   const [loading, setLoading] = createSignal(false)
-  const [controller, setController] = createSignal<AbortController>(null)
-
+  const [controller, setController] = createSignal<AbortController>()
+  const [temperature, setTemperature] = createSignal(60)
 
   onMount(() => {
     try {
-      if (localStorage.getItem('messageList')) {
-        setMessageList(JSON.parse(localStorage.getItem('messageList')))
+      const messageListStorage = localStorage.getItem('messageList')
+      const systemRoleSettingsStorage = localStorage.getItem('systemRoleSettings')
+      const temperatureStorage = localStorage.getItem('temperature')
+      if (messageListStorage) {
+        setMessageList(JSON.parse(messageListStorage))
       }
-      if (localStorage.getItem('systemRoleSettings')) {
-        setCurrentSystemRoleSettings(localStorage.getItem('systemRoleSettings'))
+      if (systemRoleSettingsStorage) {
+        setCurrentSystemRoleSettings(systemRoleSettingsStorage)
+      }
+      if (temperatureStorage) {
+        setTemperature(parseFloat(temperatureStorage))
       }
     } catch (err) {
       console.error(err)
@@ -86,6 +92,7 @@ export default () => {
             t: timestamp,
             m: requestMessageList?.[requestMessageList.length - 1]?.content || '',
           }),
+          temperature: temperature() / 200.0,
         }),
         signal: controller.signal,
       })
@@ -117,7 +124,7 @@ export default () => {
     } catch (e) {
       console.error(e)
       setLoading(false)
-      setController(null)
+      setController(undefined)
       return
     }
     archiveCurrentMessage()
@@ -134,7 +141,7 @@ export default () => {
       ])
       setCurrentAssistantMessage('')
       setLoading(false)
-      setController(null)
+      setController(undefined)
       inputRef.focus()
     }
   }
@@ -148,8 +155,9 @@ export default () => {
   }
 
   const stopStreamFetch = () => {
-    if (controller()) {
-      controller().abort()
+    const c: AbortController | undefined = controller()
+    if (c !== undefined) {
+      c.abort()
       archiveCurrentMessage()
     }
   }
@@ -238,6 +246,32 @@ export default () => {
           </button>
         </div>
       </Show>
+      <div>
+        <div class="flex flex-row justify-center">
+          <label for="temperature-range">发言随机程度：
+            <input type="range"
+                  id="temperature-range"
+                  class='mx-2 rounded-sm bg-(slate op-15) resize-none base-focus placeholder:op-50 dark:(placeholder:op-30) scroll-pa-8px'
+                  min={0}
+                  max={200}
+                  value={temperature()}
+                  placeholder="温度"
+                  onInput={ e => setTemperature(parseFloat((e.target as HTMLInputElement).value)) }
+            />
+            <input type="number"
+                  id="temperature-number"
+                  class='mx-1 rounded-sm bg-(slate op-15) resize-none base-focus placeholder:op-50 dark:(placeholder:op-30) scroll-pa-8px'
+                  min={0}
+                  max={2}
+                  step={0.01}
+                  minLength={3}
+                  value={temperature() / 100}
+                  placeholder="温度"
+                  onChange={ e => setTemperature(100 * parseFloat((e.target as HTMLInputElement).value)) }
+            />
+          </label>
+        </div>
+      </div>
     </div>
   )
 }

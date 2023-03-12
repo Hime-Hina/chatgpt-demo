@@ -12,7 +12,7 @@ const sitePassword = import.meta.env.SITE_PASSWORD
 
 export const post: APIRoute = async (context) => {
   const body = await context.request.json()
-  const { sign, time, messages, pass } = body
+  const { sign, time, messages, pass, temperature } = body
   if (!messages) {
     return new Response('No input text')
   }
@@ -22,10 +22,10 @@ export const post: APIRoute = async (context) => {
   if (import.meta.env.PROD && !await verifySignature({ t: time, m: messages?.[messages.length - 1]?.content || '', }, sign)) {
     return new Response('Invalid signature')
   }
-  const initOptions = generatePayload(apiKey, messages)
+  const initOptions = generatePayload(apiKey, messages, temperature)
   // #vercel-disable-blocks
   if (httpsProxy) {
-    initOptions['dispatcher'] = new ProxyAgent(httpsProxy)
+    (initOptions as any)['dispatcher'] = new ProxyAgent(httpsProxy)
   }
   // #vercel-end
 
