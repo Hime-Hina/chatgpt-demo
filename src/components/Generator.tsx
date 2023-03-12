@@ -160,8 +160,8 @@ export default () => {
       console.log(lastMessage)
       if (lastMessage.role === 'assistant') {
         setMessageList(messageList().slice(0, -1))
-        requestWithLatestMessage()
       }
+      requestWithLatestMessage()
     }
   }
 
@@ -188,7 +188,7 @@ export default () => {
           <MessageItem
             role={message().role}
             message={message().content}
-            showRetry={() => (message().role === 'assistant' && index === messageList().length - 1)}
+            showRetry={() => (!loading() && index === messageList().length - 1)}
             onRetry={retryLastFetch}
           />
         )}
@@ -226,9 +226,10 @@ export default () => {
           <button title="发送"
                   onClick={handleButtonClick}
                   disabled={systemRoleEditing()}
-                  class="i-carbon:send-filled text-5 mx-3"
                   gen-slate-btn
-                  />
+                  >
+            <div class="i-carbon:send-filled text-5" />
+          </button>
           <button title="清除记录"
                   onClick={clear}
                   disabled={systemRoleEditing()} 
