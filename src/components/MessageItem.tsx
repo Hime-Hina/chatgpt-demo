@@ -14,6 +14,11 @@ interface Props {
   onRetry?: () => void
 }
 
+const md = MarkdownIt('default', {
+  linkify: true,
+  typographer: true
+}).use(mdKatex).use(mdHighlight)
+
 export default ({ role, message, showRetry, onRetry }: Props) => {
   const roleClass = {
     system: 'bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300',
@@ -22,6 +27,22 @@ export default ({ role, message, showRetry, onRetry }: Props) => {
   }
   const [source] = createSignal('')
   const { copy, copied } = useClipboard({ source, copiedDuring: 1000 })
+  const fence = md.renderer.rules.fence!
+  md.renderer.rules.fence = (...args) => {
+    const [tokens, idx] = args
+    const token = tokens[idx]
+    const rawCode = fence(...args)
+
+    return `<div relative>
+    <div data-code=${encodeURIComponent(token.content)} class="copy-btn gpt-copy-btn group">
+        <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32"><path fill="currentColor" d="M28 10v18H10V10h18m0-2H10a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2Z" /><path fill="currentColor" d="M4 18H2V4a2 2 0 0 1 2-2h14v2H4Z" /></svg>
+          <div class="group-hover:op-100 gpt-copy-tips">
+            ${copied() ? '已复制！' : '复制'}
+          </div>
+    </div>
+    ${rawCode}
+    </div>`
+  }
 
   useEventListener('click', (e) => {
     const el = e.target as HTMLElement
@@ -38,24 +59,6 @@ export default ({ role, message, showRetry, onRetry }: Props) => {
   })
 
   const htmlString = () => {
-    const md = MarkdownIt({linkify: true, typographer: true}).use(mdKatex).use(mdHighlight)
-    const fence = md.renderer.rules.fence!
-    md.renderer.rules.fence = (...args) => {
-      const [tokens, idx] = args
-      const token = tokens[idx]
-      const rawCode = fence(...args)
-
-      return `<div relative>
-      <div data-code=${encodeURIComponent(token.content)} class="copy-btn gpt-copy-btn group">
-          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 32 32"><path fill="currentColor" d="M28 10v18H10V10h18m0-2H10a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2Z" /><path fill="currentColor" d="M4 18H2V4a2 2 0 0 1 2-2h14v2H4Z" /></svg>
-            <div class="group-hover:op-100 gpt-copy-tips">
-              ${copied() ? '已复制！' : '复制'}
-            </div>
-      </div>
-      ${rawCode}
-      </div>`
-    }
-
     if (typeof message === 'function') {
       return md.render(message())
     } else if (typeof message === 'string') {
