@@ -203,8 +203,8 @@ export default () => {
         when={!loading()}
         fallback={() => (
           <div class="gen-cb-wrapper">
-            <span>AI is thinking...</span>
-            <div class="gen-cb-stop" onClick={stopStreamFetch}>Stop</div>
+            <span>AI 正在组织语言……</span>
+            <div class="gen-cb-stop" onClick={stopStreamFetch}>别说了！</div>
           </div>
         )}
       >
@@ -213,7 +213,7 @@ export default () => {
             ref={inputRef!}
             disabled={systemRoleEditing()}
             onKeyDown={handleKeydown}
-            placeholder="Enter something..."
+            placeholder="有什么想说的吗？"
             autocomplete="off"
             autofocus
             onInput={() => {
@@ -223,10 +223,16 @@ export default () => {
             rows="1"
             class='gen-textarea'
           />
-          <button onClick={handleButtonClick} disabled={systemRoleEditing()} gen-slate-btn>
-            Send
-          </button>
-          <button title="Clear" onClick={clear} disabled={systemRoleEditing()} gen-slate-btn>
+          <button title="发送"
+                  onClick={handleButtonClick}
+                  disabled={systemRoleEditing()}
+                  class="i-carbon:send-filled text-5 mx-3"
+                  gen-slate-btn
+                  />
+          <button title="清除记录"
+                  onClick={clear}
+                  disabled={systemRoleEditing()} 
+                  gen-slate-btn>
             <IconClear />
           </button>
         </div>
