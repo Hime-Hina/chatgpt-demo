@@ -17,7 +17,8 @@
   text-align: left;
 }
 
-.message table th, .message table td {
+.message table th,
+.message table td {
   padding: 0.6rem 1rem;
 }
 

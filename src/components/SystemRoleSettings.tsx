@@ -1,22 +1,22 @@
-import { Show } from 'solid-js'
-import type { Accessor, Setter } from 'solid-js'
-import IconEnv from './icons/Env'
+import { Show } from "solid-js";
+import type { Accessor, Setter } from "solid-js";
+import IconEnv from "./icons/Env";
 
 interface Props {
-  canEdit: Accessor<boolean>
-  systemRoleEditing: Accessor<boolean>
-  setSystemRoleEditing: Setter<boolean>
-  currentSystemRoleSettings: Accessor<string>
-  setCurrentSystemRoleSettings: Setter<string>
+  canEdit: Accessor<boolean>;
+  systemRoleEditing: Accessor<boolean>;
+  setSystemRoleEditing: Setter<boolean>;
+  currentSystemRoleSettings: Accessor<string>;
+  setCurrentSystemRoleSettings: Setter<string>;
 }
 
 export default (props: Props) => {
-  let systemInputRef: HTMLTextAreaElement
+  let systemInputRef: HTMLTextAreaElement;
 
   const handleButtonClick = () => {
-    props.setCurrentSystemRoleSettings(systemInputRef.value)
-    props.setSystemRoleEditing(false)
-  }
+    props.setCurrentSystemRoleSettings(systemInputRef.value);
+    props.setSystemRoleEditing(false);
+  };
 
   return (
     <div class="my-4">
@@ -27,13 +27,16 @@ export default (props: Props) => {
               <IconEnv />
               <span>系统设定：</span>
             </div>
-            <div class="mt-1">
-              { props.currentSystemRoleSettings() }
-            </div>
+            <div class="mt-1">{props.currentSystemRoleSettings()}</div>
           </div>
         </Show>
         <Show when={!props.currentSystemRoleSettings() && props.canEdit()}>
-          <span onClick={() => props.setSystemRoleEditing(!props.systemRoleEditing())} class="sys-edit-btn">
+          <span
+            onClick={() =>
+              props.setSystemRoleEditing(!props.systemRoleEditing())
+            }
+            class="sys-edit-btn"
+          >
             <IconEnv />
             <span>添加系统设定</span>
           </span>
@@ -45,7 +48,9 @@ export default (props: Props) => {
             <IconEnv />
             <span>系统设定：</span>
           </div>
-          <p class="my-2 leading-normal text-sm op-50 dark:op-60">指导助手，设定助手一般的行为。但影响较小。</p>
+          <p class="my-2 leading-normal text-sm op-50 dark:op-60">
+            指导助手，设定助手一般的行为。但影响较小。
+          </p>
           <div>
             <textarea
               ref={systemInputRef!}
@@ -62,5 +67,5 @@ export default (props: Props) => {
         </div>
       </Show>
     </div>
-  )
-}
+  );
+};

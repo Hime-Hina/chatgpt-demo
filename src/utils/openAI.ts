@@ -4,7 +4,7 @@ import type { ChatMessage } from '@/types'
 export const generatePayload = (apiKey: string, messages: ChatMessage[], temperature: number): RequestInit => ({
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${apiKey}`,
+    'Authorization': `Bearer ${apiKey}`,
   },
   method: 'POST',
   body: JSON.stringify({
