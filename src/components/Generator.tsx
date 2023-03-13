@@ -139,6 +139,12 @@ export default () => {
       return;
     }
     archiveCurrentMessage();
+    console.log(await fetch('/api/getTokenUsage', {
+      method: 'POST',
+      body: JSON.stringify({
+        messages: messageList()
+      })
+    }))
   };
 
   const archiveCurrentMessage = () => {
