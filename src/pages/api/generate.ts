@@ -33,7 +33,6 @@ export const post: APIRoute = async (context) => {
     return new Response("Invalid signature");
   }
   const initOptions = generatePayload(apiKey, messages, temperature);
-  console.log(initOptions);
   // #vercel-disable-blocks
   if (httpsProxy) {
     (initOptions as any)["dispatcher"] = new ProxyAgent(httpsProxy);
