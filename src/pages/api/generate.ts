@@ -42,5 +42,10 @@ export const post: APIRoute = async (context) => {
   // @ts-ignore
   const response = (await fetch( `${baseUrl}/v1/chat/completions`, initOptions)) as Response;
 
-  return new Response(parseOpenAIStream(response));
+  return new Response(parseOpenAIStream(response), {
+    status: 200,
+    headers: {
+      'Content-Type': "application/json",
+    },
+  });
 };

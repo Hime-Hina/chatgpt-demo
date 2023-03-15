@@ -1,10 +1,19 @@
 import type { ChatMessage } from "@/types";
-import { createSignal, Index, Show, onMount, onCleanup } from "solid-js";
+import {
+  createSignal,
+  Index,
+  Show,
+  onMount,
+  onCleanup,
+  createMemo,
+} from "solid-js";
 import IconClear from "./icons/Clear";
 import MessageItem from "./MessageItem";
 import SystemRoleSettings from "./SystemRoleSettings";
 import { generateSignature } from "@/utils/auth";
 import { useThrottleFn } from "solidjs-use";
+import { encoding_for_model } from "@dqbd/tiktoken";
+import { getTokensUsage } from "@/utils/tokensUsage";
 
 export default () => {
   let inputRef: HTMLTextAreaElement;
@@ -17,8 +26,10 @@ export default () => {
   const [loading, setLoading] = createSignal(false);
   const [controller, setController] = createSignal<AbortController>();
   const [temperature, setTemperature] = createSignal(60);
+  const [inputValue, setInputValue] = createSignal("");
+  const tiktoken = encoding_for_model("gpt-3.5-turbo");
 
-  onMount(() => {
+  onMount(async () => {
     try {
       const messageListStorage = localStorage.getItem("messageList");
       const systemRoleSettingsStorage =
@@ -41,12 +52,48 @@ export default () => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     onCleanup(() => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      tiktoken.free();
     });
+  });
+
+  const getTokensUsageMemo = createMemo(() => {
+    const messages: ChatMessage[] = [];
+    if (currentSystemRoleSettings()) {
+      messages.push({
+        role: "system",
+        content: currentSystemRoleSettings(),
+      });
+    }
+    messages.push(...messageList());
+    if (inputValue()) {
+      messages.push({
+        role: "user",
+        content: inputValue(),
+      });
+    }
+    // When archiveCurrentMessage is called, setMessageList will be called first,
+    // then this memo will be called. So assistant message is already archived in messageList.
+    // In order to prevent assistant message from being pushed into messages twice, we need to check it.
+    // Maybe there is a better way to do this.
+    const lastMessage = messages[messages.length - 1];
+    const isAssistantMessageArchived =
+      lastMessage !== undefined &&
+      lastMessage.role === "assistant" &&
+      lastMessage.content === currentAssistantMessage();
+    if (currentAssistantMessage() && !isAssistantMessageArchived) {
+      messages.push({
+        role: "assistant",
+        content: currentAssistantMessage(),
+      });
+    }
+    console.log(messages);
+    return getTokensUsage(tiktoken, messages);
   });
 
   const handleBeforeUnload = () => {
     localStorage.setItem("messageList", JSON.stringify(messageList()));
     localStorage.setItem("systemRoleSettings", currentSystemRoleSettings());
+    localStorage.setItem("temperature", temperature().toString());
   };
 
   const handleButtonClick = async () => {
@@ -139,12 +186,6 @@ export default () => {
       return;
     }
     archiveCurrentMessage();
-    console.log(await fetch('/api/getTokenUsage', {
-      method: 'POST',
-      body: JSON.stringify({
-        messages: messageList()
-      })
-    }))
   };
 
   const archiveCurrentMessage = () => {
@@ -166,6 +207,7 @@ export default () => {
   const clear = () => {
     inputRef.value = "";
     inputRef.style.height = "auto";
+    setInputValue(inputRef.value);
     setMessageList([]);
     setCurrentAssistantMessage("");
     setCurrentSystemRoleSettings("");
@@ -182,7 +224,6 @@ export default () => {
   const retryLastFetch = () => {
     if (messageList().length > 0) {
       const lastMessage = messageList()[messageList().length - 1];
-      console.log(lastMessage);
       if (lastMessage.role === "assistant") {
         setMessageList(messageList().slice(0, -1));
       }
@@ -221,6 +262,20 @@ export default () => {
       {currentAssistantMessage() && (
         <MessageItem role="assistant" message={currentAssistantMessage} />
       )}
+      <div>
+        <textarea
+          disabled={true}
+          placeholder="..."
+          autocomplete="off"
+          rows="1"
+          class="gen-textarea"
+          value={`completion_tokens: ${
+            getTokensUsageMemo().completion_tokens
+          } prompt_tokens: ${
+            getTokensUsageMemo().prompt_tokens
+          } total_tokens: ${getTokensUsageMemo().total_tokens}`}
+        />
+      </div>
       <Show
         when={!loading()}
         fallback={() => (
@@ -243,6 +298,7 @@ export default () => {
             onInput={() => {
               inputRef.style.height = "auto";
               inputRef.style.height = inputRef.scrollHeight + "px";
+              setInputValue(inputRef.value);
             }}
             rows="1"
             class="gen-textarea"
@@ -277,12 +333,9 @@ export default () => {
               max={200}
               value={temperature()}
               placeholder="温度"
-              onInput={(e) => {
-                setTemperature(
-                  parseFloat((e.target as HTMLInputElement).value)
-                );
-                localStorage.setItem('temperature', temperature().toString());
-              }}
+              onInput={(e) =>
+                setTemperature(parseFloat((e.target as HTMLInputElement).value))
+              }
             />
             <input
               type="number"
@@ -294,12 +347,11 @@ export default () => {
               minLength={3}
               value={temperature() / 100}
               placeholder="温度"
-              onChange={(e) => {
+              onChange={(e) =>
                 setTemperature(
                   100 * parseFloat((e.target as HTMLInputElement).value)
-                );
-                localStorage.setItem('temperature', temperature().toString());
-              }}
+                )
+              }
             />
           </label>
         </div>

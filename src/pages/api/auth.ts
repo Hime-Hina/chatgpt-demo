@@ -9,6 +9,12 @@ export const post: APIRoute = async (context) => {
   return new Response(
     JSON.stringify({
       code: !realPassword || pass === realPassword ? 0 : -1,
-    })
+    }),
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
   );
 };
