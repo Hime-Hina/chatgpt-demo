@@ -64,7 +64,6 @@ export const TokensUsage: Component<{
         content: local.currentAssistantMessage,
       });
     }
-    console.log("messages", messages);
     return getTokensUsage(tiktoken, messages);
   });
 
@@ -76,10 +75,8 @@ export const TokensUsage: Component<{
         autocomplete="off"
         rows="1"
         class="gen-textarea"
-        value={`completion: ${
-          getTokensUsageMemo().completion_tokens
-        } | prompt: ${getTokensUsageMemo().prompt_tokens} | total: ${
-          getTokensUsageMemo().total_tokens
+        value={`补全: ${getTokensUsageMemo().completion_tokens} | 提示: ${
+          getTokensUsageMemo().prompt_tokens
         }`}
       />
     </div>

@@ -37,13 +37,30 @@ export const getTokensUsage = (tiktoken: Tiktoken, messages: ChatMessage[]) => {
   // every prompt is primed with a extra <im_start>assistant, so we add 2.
   const prompt_num = prompts.map(countTokens).reduce((a, b) => a + b, 0) + 2;
   // countTokens always adds 4 for <im_start>, \n, <im_end>, \n and adds 1 for the role.
-  // But <im_start>assistant is not part of the completion, 
-  // and the second \n is considered part of the completion content.
-  // It seems that <im_end>\n is not part of the completion either.
-  // So we subtract 5.
+  // But <im_start>assistant is not part of the completion,
+  // and it seems that <im_end>\n is not part of the completion either.
+  // the second \n is considered part of the completion content, sometimes not.
+  // So we subtract 4.
   // The completion tokens seems to be the same as the number of tokens in the completion content.
-  const completion_num = countTokens(completion) - (isCompleted ? 5 : 0);
+  const completion_num = countTokens(completion) - (isCompleted ? 4 : 0);
 
+  console.log(
+    messages.map((m) => {
+      return {
+        role: m.role,
+        content: m.content,
+        name: m.name,
+        encoded: {
+          role: tiktoken.encode(m.role),
+          content: tiktoken.encode(m.content),
+          name: m.name ? tiktoken.encode(m.name) : undefined,
+        },
+      };
+    }),
+    `prompt_num: ${prompt_num}, completion_num: ${completion_num}, total: ${
+      prompt_num + completion_num
+    }`
+  );
   return {
     completion_tokens: completion_num,
     prompt_tokens: prompt_num,
