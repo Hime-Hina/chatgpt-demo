@@ -16,6 +16,7 @@ interface Props {
 
 const md = MarkdownIt("default", {
   linkify: true,
+  breaks: true,
   typographer: true,
 })
   .use(mdKatex)
@@ -78,7 +79,7 @@ export default ({ role, message, showRetry, onRetry }: Props) => {
           class={`shrink-0 w-7 h-7 mt-4 rounded-full op-80 ${roleClass[role]}`}
         ></div>
         <div
-          class="message prose break-words overflow-hidden"
+          class="min-w-0 message prose break-words"
           innerHTML={htmlString()}
         />
       </div>
