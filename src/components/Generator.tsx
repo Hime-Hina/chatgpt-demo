@@ -1,19 +1,12 @@
 import type { ChatMessage } from "@/types";
-import {
-  createSignal,
-  Index,
-  Show,
-  onMount,
-  onCleanup,
-  createMemo,
-} from "solid-js";
+import { createSignal, Index, Show, onMount, onCleanup, batch } from "solid-js";
 import IconClear from "./icons/Clear";
 import MessageItem from "./MessageItem";
 import SystemRoleSettings from "./SystemRoleSettings";
 import { generateSignature } from "@/utils/auth";
 import { useThrottleFn } from "solidjs-use";
-import { encoding_for_model } from "@dqbd/tiktoken";
-import { getTokensUsage } from "@/utils/tokensUsage";
+import { TokensUsage } from "./TokensUsage";
+import { createMutable, createStore } from "solid-js/store";
 
 export default () => {
   let inputRef: HTMLTextAreaElement;
@@ -27,7 +20,6 @@ export default () => {
   const [controller, setController] = createSignal<AbortController>();
   const [temperature, setTemperature] = createSignal(60);
   const [inputValue, setInputValue] = createSignal("");
-  const tiktoken = encoding_for_model("gpt-3.5-turbo");
 
   onMount(async () => {
     try {
@@ -45,6 +37,22 @@ export default () => {
         setTemperature(parseFloat(temperatureStorage));
         console.log(`LocalStorage temperature: ${temperatureStorage}`);
       }
+
+      // const prototypeOwnPropertyDescriptor = Object.getOwnPropertyDescriptor(
+      //   HTMLTextAreaElement.prototype,
+      //   "value"
+      // )!;
+      // Object.defineProperty(inputRef, "value", {
+      //   configurable: prototypeOwnPropertyDescriptor.configurable,
+      //   enumerable: prototypeOwnPropertyDescriptor.enumerable,
+      //   get: prototypeOwnPropertyDescriptor.get,
+      //   set: function (this: HTMLTextAreaElement, value: string) {
+      //     prototypeOwnPropertyDescriptor.set?.call(this, value);
+      //     const event = new Event("input", { bubbles: true });
+      //     this.dispatchEvent(event);
+      //   },
+      // });
+      // console.log(Object.getOwnPropertyDescriptor(inputRef, "value"));
     } catch (err) {
       console.error(err);
     }
@@ -52,42 +60,7 @@ export default () => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     onCleanup(() => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      tiktoken.free();
     });
-  });
-
-  const getTokensUsageMemo = createMemo(() => {
-    const messages: ChatMessage[] = [];
-    if (currentSystemRoleSettings()) {
-      messages.push({
-        role: "system",
-        content: currentSystemRoleSettings(),
-      });
-    }
-    messages.push(...messageList());
-    if (inputValue()) {
-      messages.push({
-        role: "user",
-        content: inputValue(),
-      });
-    }
-    // When archiveCurrentMessage is called, setMessageList will be called first,
-    // then this memo will be called. So assistant message is already archived in messageList.
-    // In order to prevent assistant message from being pushed into messages twice, we need to check it.
-    // Maybe there is a better way to do this.
-    const lastMessage = messages[messages.length - 1];
-    const isAssistantMessageArchived =
-      lastMessage !== undefined &&
-      lastMessage.role === "assistant" &&
-      lastMessage.content === currentAssistantMessage();
-    if (currentAssistantMessage() && !isAssistantMessageArchived) {
-      messages.push({
-        role: "assistant",
-        content: currentAssistantMessage(),
-      });
-    }
-    console.log(messages);
-    return getTokensUsage(tiktoken, messages);
   });
 
   const handleBeforeUnload = () => {
@@ -104,13 +77,16 @@ export default () => {
     // @ts-ignore
     if (window?.umami) umami.trackEvent("chat_generate");
     inputRef.value = "";
-    setMessageList([
-      ...messageList(),
-      {
-        role: "user",
-        content: inputValue,
-      },
-    ]);
+    batch(() => {
+      setMessageList([
+        ...messageList(),
+        {
+          role: "user",
+          content: inputValue,
+        },
+      ]);
+      setInputValue(inputRef.value);
+    });
     requestWithLatestMessage();
   };
 
@@ -190,14 +166,16 @@ export default () => {
 
   const archiveCurrentMessage = () => {
     if (currentAssistantMessage()) {
-      setMessageList([
-        ...messageList(),
-        {
-          role: "assistant",
-          content: currentAssistantMessage(),
-        },
-      ]);
-      setCurrentAssistantMessage("");
+      batch(() => {
+        setMessageList([
+          ...messageList(),
+          {
+            role: "assistant",
+            content: currentAssistantMessage(),
+          },
+        ]);
+        setCurrentAssistantMessage("");
+      });
       setLoading(false);
       setController(undefined);
       inputRef.focus();
@@ -207,10 +185,12 @@ export default () => {
   const clear = () => {
     inputRef.value = "";
     inputRef.style.height = "auto";
-    setInputValue(inputRef.value);
-    setMessageList([]);
-    setCurrentAssistantMessage("");
-    setCurrentSystemRoleSettings("");
+    batch(() => {
+      setCurrentSystemRoleSettings("");
+      setMessageList([]);
+      setInputValue(inputRef.value);
+      setCurrentAssistantMessage("");
+    });
   };
 
   const stopStreamFetch = () => {
@@ -262,20 +242,12 @@ export default () => {
       {currentAssistantMessage() && (
         <MessageItem role="assistant" message={currentAssistantMessage} />
       )}
-      <div>
-        <textarea
-          disabled={true}
-          placeholder="..."
-          autocomplete="off"
-          rows="1"
-          class="gen-textarea"
-          value={`completion_tokens: ${
-            getTokensUsageMemo().completion_tokens
-          } prompt_tokens: ${
-            getTokensUsageMemo().prompt_tokens
-          } total_tokens: ${getTokensUsageMemo().total_tokens}`}
-        />
-      </div>
+      <TokensUsage
+        currentSystemRoleSettings={currentSystemRoleSettings()}
+        messageList={messageList()}
+        textAreaValue={inputValue()}
+        currentAssistantMessage={currentAssistantMessage()}
+      />
       <Show
         when={!loading()}
         fallback={() => (
