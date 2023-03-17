@@ -5,6 +5,7 @@ specifiers:
   '@astrojs/node': ^5.0.4
   '@astrojs/solid-js': ^2.0.2
   '@astrojs/vercel': ^3.1.3
+  '@dqbd/tiktoken': ^1.0.2
   '@evan-yang/eslint-config': ^1.0.1
   '@iconify-json/carbon': ^1.1.16
   '@types/markdown-it': ^12.2.3
@@ -34,6 +35,7 @@ dependencies:
   '@astrojs/node': 5.1.0_astro@2.1.3
   '@astrojs/solid-js': 2.1.0_fqjiu6dx33dr7dveogf7j2esim
   '@astrojs/vercel': 3.2.1_astro@2.1.3+react@18.2.0
+  '@dqbd/tiktoken': 1.0.2
   '@unocss/reset': 0.50.4
   astro: 2.1.3
   eslint: 8.36.0
@@ -450,6 +452,10 @@ packages:
       '@babel/helper-string-parser': 7.19.4
       '@babel/helper-validator-identifier': 7.19.1
       to-fast-properties: 2.0.0
+    dev: false
+
+  /@dqbd/tiktoken/1.0.2:
+    resolution: {integrity: sha512-AjGTBRWsMoVmVeN55NLyupyM8TNamOUBl6tj5t/leLDVup3CFGO9tVagNL1jf3GyZLkWZSTmYVbPQ/M2LEcNzw==}
     dev: false
 
   /@emmetio/abbreviation/2.2.3:

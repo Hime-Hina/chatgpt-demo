@@ -1,10 +1,11 @@
-import { Index, Show, createSignal, onCleanup, onMount } from 'solid-js'
+import { Index, Show, batch, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import { useThrottleFn } from 'solidjs-use'
 import { generateSignature } from '@/utils/auth'
 import IconClear from './icons/Clear'
 import MessageItem from './MessageItem'
 import SystemRoleSettings from './SystemRoleSettings'
 import ErrorMessageItem from './ErrorMessageItem'
+import { TokensUsage } from './TokensUsage'
 import type { ChatMessage, ErrorMessage } from '@/types'
 
 export default () => {
@@ -16,6 +17,7 @@ export default () => {
   const [currentAssistantMessage, setCurrentAssistantMessage] = createSignal('')
   const [loading, setLoading] = createSignal(false)
   const [controller, setController] = createSignal<AbortController>(null)
+  const [inputValue, setInputValue] = createSignal('')
 
   onMount(() => {
     try {
@@ -24,6 +26,27 @@ export default () => {
 
       if (localStorage.getItem('systemRoleSettings'))
         setCurrentSystemRoleSettings(localStorage.getItem('systemRoleSettings'))
+
+      // bind inputRef.value to inputValue
+      // const prototypeOwnPropertyDescriptor = Object.getOwnPropertyDescriptor(
+      //   HTMLTextAreaElement.prototype,
+      //   "value"
+      // )!
+      // Object.defineProperty(inputRef, "value", {
+      //   configurable: prototypeOwnPropertyDescriptor.configurable,
+      //   enumerable: prototypeOwnPropertyDescriptor.enumerable,
+      //   get: prototypeOwnPropertyDescriptor.get,
+      //   set: function (this: HTMLTextAreaElement, value: string) {
+      //     prototypeOwnPropertyDescriptor.set?.call(this, value);
+      //     setInputValue(value);
+      //     console.log("inputRef.value changed");
+      //   },
+      // })
+      // bind inputValue to inputRef.value
+      createEffect(() => {
+        // prototypeOwnPropertyDescriptor.set?.call(inputRef, inputValue());
+        inputRef.value = inputValue()
+      })
     } catch (err) {
       console.error(err)
     }
@@ -40,21 +63,24 @@ export default () => {
   }
 
   const handleButtonClick = async() => {
-    const inputValue = inputRef.value
-    if (!inputValue)
+    // const inputValue = inputRef.value
+    if (!inputValue())
       return
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     if (window?.umami) umami.trackEvent('chat_generate')
-    inputRef.value = ''
-    setMessageList([
-      ...messageList(),
-      {
-        role: 'user',
-        content: inputValue,
-      },
-    ])
+    // inputRef.value = ''
+    batch(() => {
+      setMessageList([
+        ...messageList(),
+        {
+          role: 'user',
+          content: inputValue(),
+        },
+      ])
+      setInputValue('')
+    })
     requestWithLatestMessage()
   }
 
@@ -130,14 +156,16 @@ export default () => {
 
   const archiveCurrentMessage = () => {
     if (currentAssistantMessage()) {
-      setMessageList([
-        ...messageList(),
-        {
-          role: 'assistant',
-          content: currentAssistantMessage(),
-        },
-      ])
-      setCurrentAssistantMessage('')
+      batch(() => {
+        setMessageList([
+          ...messageList(),
+          {
+            role: 'assistant',
+            content: currentAssistantMessage(),
+          },
+        ])
+        setCurrentAssistantMessage('')
+      })
       setLoading(false)
       setController(null)
       inputRef.focus()
@@ -145,11 +173,14 @@ export default () => {
   }
 
   const clear = () => {
-    inputRef.value = ''
+    // inputRef.value = ''
     inputRef.style.height = 'auto'
-    setMessageList([])
-    setCurrentAssistantMessage('')
-    setCurrentSystemRoleSettings('')
+    batch(() => {
+      setInputValue('')
+      setMessageList([])
+      setCurrentAssistantMessage('')
+      setCurrentSystemRoleSettings('')
+    })
   }
 
   const stopStreamFetch = () => {
@@ -191,7 +222,7 @@ export default () => {
           <MessageItem
             role={message().role}
             message={message().content}
-            showRetry={() => (message().role === 'assistant' && index === messageList().length - 1)}
+            showRetry={() => !loading() && index === messageList().length - 1}
             onRetry={retryLastFetch}
           />
         )}
@@ -203,6 +234,12 @@ export default () => {
         />
       )}
       { currentError() && <ErrorMessageItem data={currentError()} onRetry={retryLastFetch} /> }
+      <TokensUsage
+        currentSystemRoleSettings={currentSystemRoleSettings()}
+        messageList={messageList()}
+        textAreaValue={inputValue()}
+        currentAssistantMessage={currentAssistantMessage()}
+      />
       <Show
         when={!loading()}
         fallback={() => (
@@ -220,9 +257,10 @@ export default () => {
             placeholder="Enter something..."
             autocomplete="off"
             autofocus
-            onInput={() => {
+            onInput={(e) => {
               inputRef.style.height = 'auto'
               inputRef.style.height = `${inputRef.scrollHeight}px`
+              setInputValue((e.target as HTMLTextAreaElement).value)
             }}
             rows="1"
             class="gen-textarea"
