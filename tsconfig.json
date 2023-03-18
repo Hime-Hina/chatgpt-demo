@@ -6,7 +6,13 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["src/*"]
     },
+    "plugins": [
+      {
+        "name": "@astrojs/ts-plugin"
+      }
+    ],
+    "importsNotUsedAsValues": "error"
   }
 }

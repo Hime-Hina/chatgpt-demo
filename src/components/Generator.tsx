@@ -1,42 +1,57 @@
-import type { ChatMessage } from "@/types";
-import { createSignal, Index, Show, onMount, onCleanup, batch } from "solid-js";
-import IconClear from "./icons/Clear";
-import MessageItem from "./MessageItem";
-import SystemRoleSettings from "./SystemRoleSettings";
-import { generateSignature } from "@/utils/auth";
-import { useThrottleFn } from "solidjs-use";
-import { TokensUsage } from "./TokensUsage";
-import { createMutable, createStore } from "solid-js/store";
+import { Index, Show, batch, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
+import { useThrottleFn } from 'solidjs-use'
+import { generateSignature } from '@/utils/auth'
+import IconClear from './icons/Clear'
+import MessageItem from './MessageItem'
+import SystemRoleSettings from './SystemRoleSettings'
+import ErrorMessageItem from './ErrorMessageItem'
+import { TokensUsage } from './TokensUsage'
+import type { ChatMessage, ErrorMessage } from '@/types'
 
 export default () => {
-  let inputRef: HTMLTextAreaElement;
-  const [currentSystemRoleSettings, setCurrentSystemRoleSettings] =
-    createSignal("");
-  const [systemRoleEditing, setSystemRoleEditing] = createSignal(false);
-  const [messageList, setMessageList] = createSignal<ChatMessage[]>([]);
-  const [currentAssistantMessage, setCurrentAssistantMessage] =
-    createSignal("");
-  const [loading, setLoading] = createSignal(false);
-  const [controller, setController] = createSignal<AbortController>();
-  const [temperature, setTemperature] = createSignal(60);
-  const [inputValue, setInputValue] = createSignal("");
+  let inputRef: HTMLTextAreaElement
+  const [currentSystemRoleSettings, setCurrentSystemRoleSettings] = createSignal('')
+  const [systemRoleEditing, setSystemRoleEditing] = createSignal(false)
+  const [messageList, setMessageList] = createSignal<ChatMessage[]>([])
+  const [currentError, setCurrentError] = createSignal<ErrorMessage>()
+  const [currentAssistantMessage, setCurrentAssistantMessage] = createSignal('')
+  const [loading, setLoading] = createSignal(false)
+  const [controller, setController] = createSignal<AbortController>()
+  const [temperature, setTemperature] = createSignal(60)
+  const [inputValue, setInputValue] = createSignal('')
 
-  onMount(async () => {
+  onMount(async() => {
     try {
-      const messageListStorage = localStorage.getItem("messageList");
-      const systemRoleSettingsStorage =
-        localStorage.getItem("systemRoleSettings");
-      const temperatureStorage = localStorage.getItem("temperature");
-      if (messageListStorage) {
-        setMessageList(JSON.parse(messageListStorage));
-      }
-      if (systemRoleSettingsStorage) {
-        setCurrentSystemRoleSettings(systemRoleSettingsStorage);
-      }
-      if (temperatureStorage) {
-        setTemperature(parseFloat(temperatureStorage));
-        console.log(`LocalStorage temperature: ${temperatureStorage}`);
-      }
+      const messageListStorage = localStorage.getItem('messageList')
+      const systemRoleSettingsStorage = localStorage.getItem('systemRoleSettings')
+      const temperatureStorage = localStorage.getItem('temperature')
+      if (messageListStorage)
+        setMessageList(JSON.parse(messageListStorage))
+      if (systemRoleSettingsStorage)
+        setCurrentSystemRoleSettings(systemRoleSettingsStorage)
+      if (temperatureStorage)
+        setTemperature(parseFloat(temperatureStorage))
+
+      // bind inputRef.value to inputValue
+      // const prototypeOwnPropertyDescriptor = Object.getOwnPropertyDescriptor(
+      //   HTMLTextAreaElement.prototype,
+      //   "value"
+      // )!
+      // Object.defineProperty(inputRef, "value", {
+      //   configurable: prototypeOwnPropertyDescriptor.configurable,
+      //   enumerable: prototypeOwnPropertyDescriptor.enumerable,
+      //   get: prototypeOwnPropertyDescriptor.get,
+      //   set: function (this: HTMLTextAreaElement, value: string) {
+      //     prototypeOwnPropertyDescriptor.set?.call(this, value);
+      //     setInputValue(value);
+      //     console.log("inputRef.value changed");
+      //   },
+      // })
+      // bind inputValue to inputRef.value
+      createEffect(() => {
+        // prototypeOwnPropertyDescriptor.set?.call(inputRef, inputValue());
+        inputRef.value = inputValue()
+      })
 
       // const prototypeOwnPropertyDescriptor = Object.getOwnPropertyDescriptor(
       //   HTMLTextAreaElement.prototype,
@@ -54,115 +69,118 @@ export default () => {
       // });
       // console.log(Object.getOwnPropertyDescriptor(inputRef, "value"));
     } catch (err) {
-      console.error(err);
+      console.error(err)
     }
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener('beforeunload', handleBeforeUnload)
     onCleanup(() => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    });
-  });
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    })
+  })
 
   const handleBeforeUnload = () => {
-    localStorage.setItem("messageList", JSON.stringify(messageList()));
-    localStorage.setItem("systemRoleSettings", currentSystemRoleSettings());
-    localStorage.setItem("temperature", temperature().toString());
-  };
+    localStorage.setItem('messageList', JSON.stringify(messageList()))
+    localStorage.setItem('systemRoleSettings', currentSystemRoleSettings())
+    localStorage.setItem('temperature', temperature().toString())
+  }
 
-  const handleButtonClick = async () => {
-    const inputValue = inputRef.value;
-    if (!inputValue) {
-      return;
-    }
-    // @ts-ignore
-    if (window?.umami) umami.trackEvent("chat_generate");
-    inputRef.value = "";
+  const handleButtonClick = async() => {
+    // const inputValue = inputRef.value
+    if (!inputValue())
+      return
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    if (window?.umami) umami.trackEvent('chat_generate')
+    // inputRef.value = ''
     batch(() => {
       setMessageList([
         ...messageList(),
         {
-          role: "user",
-          content: inputValue,
+          role: 'user',
+          content: inputValue(),
         },
-      ]);
-      setInputValue(inputRef.value);
-    });
-    requestWithLatestMessage();
-  };
+      ])
+      setInputValue('')
+    })
+    requestWithLatestMessage()
+  }
 
   const smoothToBottom = useThrottleFn(
     () => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
     },
     300,
     false,
-    true
-  );
+    true,
+  )
 
-  const requestWithLatestMessage = async () => {
-    setLoading(true);
-    setCurrentAssistantMessage("");
-    const storagePassword = localStorage.getItem("pass");
+  const requestWithLatestMessage = async() => {
+    setLoading(true)
+    setCurrentAssistantMessage('')
+    setCurrentError(undefined)
+    const storagePassword = localStorage.getItem('pass')
     try {
-      const controller = new AbortController();
-      setController(controller);
-      const requestMessageList = [...messageList()];
+      const controller = new AbortController()
+      setController(controller)
+      const requestMessageList = [...messageList()]
       if (currentSystemRoleSettings()) {
         requestMessageList.unshift({
-          role: "system",
+          role: 'system',
           content: currentSystemRoleSettings(),
-        });
+        })
       }
-      const timestamp = Date.now();
-      const response = await fetch("/api/generate", {
-        method: "POST",
+      const timestamp = Date.now()
+      const response = await fetch('/api/generate', {
+        method: 'POST',
         body: JSON.stringify({
           messages: requestMessageList,
           time: timestamp,
           pass: storagePassword,
           sign: await generateSignature({
             t: timestamp,
-            m:
-              requestMessageList?.[requestMessageList.length - 1]?.content ||
-              "",
+            m: requestMessageList?.[requestMessageList.length - 1]?.content || '',
           }),
           temperature: temperature() / 100.0,
         }),
         signal: controller.signal,
-      });
+      })
       if (!response.ok) {
-        throw new Error(response.statusText);
+        const error = await response.json()
+        console.error(error.error)
+        setCurrentError(error.error)
+        throw new Error('Request failed')
       }
-      const data = response.body;
-      if (!data) {
-        throw new Error("No data");
-      }
-      const reader = data.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let done = false;
+      const data = response.body
+      if (!data)
+        throw new Error('No data')
+
+      const reader = data.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let done = false
 
       while (!done) {
-        const { value, done: readerDone } = await reader.read();
+        const { value, done: readerDone } = await reader.read()
         if (value) {
-          let char = decoder.decode(value);
-          if (char === "\n" && currentAssistantMessage().endsWith("\n")) {
-            continue;
-          }
-          if (char) {
-            setCurrentAssistantMessage(currentAssistantMessage() + char);
-          }
-          smoothToBottom();
+          const char = decoder.decode(value)
+          if (char === '\n' && currentAssistantMessage().endsWith('\n'))
+            continue
+
+          if (char)
+            setCurrentAssistantMessage(currentAssistantMessage() + char)
+
+          smoothToBottom()
         }
-        done = readerDone;
+        done = readerDone
       }
     } catch (e) {
-      console.error(e);
-      setLoading(false);
-      setController(undefined);
-      return;
+      console.error(e)
+      setLoading(false)
+      setController(undefined)
+      return
     }
-    archiveCurrentMessage();
-  };
+    archiveCurrentMessage()
+  }
 
   const archiveCurrentMessage = () => {
     if (currentAssistantMessage()) {
@@ -170,55 +188,54 @@ export default () => {
         setMessageList([
           ...messageList(),
           {
-            role: "assistant",
+            role: 'assistant',
             content: currentAssistantMessage(),
           },
-        ]);
-        setCurrentAssistantMessage("");
-      });
-      setLoading(false);
-      setController(undefined);
-      inputRef.focus();
+        ])
+        setCurrentAssistantMessage('')
+      })
+      setLoading(false)
+      setController(undefined)
+      inputRef.focus()
     }
-  };
+  }
 
   const clear = () => {
-    inputRef.value = "";
-    inputRef.style.height = "auto";
+    // inputRef.value = ''
+    inputRef.style.height = 'auto'
     batch(() => {
-      setCurrentSystemRoleSettings("");
-      setMessageList([]);
-      setInputValue(inputRef.value);
-      setCurrentAssistantMessage("");
-    });
-  };
+      setInputValue('')
+      setMessageList([])
+      setCurrentAssistantMessage('')
+      setCurrentSystemRoleSettings('')
+    })
+  }
 
   const stopStreamFetch = () => {
-    const c: AbortController | undefined = controller();
+    const c: AbortController | undefined = controller()
     if (c !== undefined) {
-      c.abort();
-      archiveCurrentMessage();
+      c.abort()
+      archiveCurrentMessage()
     }
-  };
+  }
 
   const retryLastFetch = () => {
     if (messageList().length > 0) {
-      const lastMessage = messageList()[messageList().length - 1];
-      if (lastMessage.role === "assistant") {
-        setMessageList(messageList().slice(0, -1));
-      }
-      requestWithLatestMessage();
+      const lastMessage = messageList()[messageList().length - 1]
+      if (lastMessage.role === 'assistant')
+        setMessageList(messageList().slice(0, -1))
+
+      requestWithLatestMessage()
     }
-  };
+  }
 
   const handleKeydown = (e: KeyboardEvent) => {
-    if (e.isComposing || e.shiftKey) {
-      return;
-    }
-    if (e.key === "Enter") {
-      handleButtonClick();
-    }
-  };
+    if (e.isComposing || e.shiftKey)
+      return
+
+    if (e.key === 'Enter')
+      handleButtonClick()
+  }
 
   return (
     <div my-6>
@@ -242,6 +259,7 @@ export default () => {
       {currentAssistantMessage() && (
         <MessageItem role="assistant" message={currentAssistantMessage} />
       )}
+      { currentError() && <ErrorMessageItem data={currentError()!} onRetry={retryLastFetch} /> }
       <TokensUsage
         currentSystemRoleSettings={currentSystemRoleSettings()}
         messageList={messageList()}
@@ -253,9 +271,7 @@ export default () => {
         fallback={() => (
           <div class="gen-cb-wrapper">
             <span>AI 正在组织语言……</span>
-            <div class="gen-cb-stop" onClick={stopStreamFetch}>
-              别说了！
-            </div>
+            <div class="gen-cb-stop" onClick={stopStreamFetch}>别说了！</div>
           </div>
         )}
       >
@@ -267,10 +283,10 @@ export default () => {
             placeholder="有什么想说的吗？"
             autocomplete="off"
             autofocus
-            onInput={() => {
-              inputRef.style.height = "auto";
-              inputRef.style.height = inputRef.scrollHeight + "px";
-              setInputValue(inputRef.value);
+            onInput={(e) => {
+              inputRef.style.height = 'auto'
+              inputRef.style.height = `${inputRef.scrollHeight}px`
+              setInputValue((e.target as HTMLTextAreaElement).value)
             }}
             rows="1"
             class="gen-textarea"
@@ -296,7 +312,7 @@ export default () => {
       <div>
         <div class="flex flex-row justify-center">
           <label for="temperature-range">
-            发言随机程度：
+            <span>发言随机程度：</span>
             <input
               type="range"
               id="temperature-range"
@@ -305,7 +321,7 @@ export default () => {
               max={200}
               value={temperature()}
               placeholder="温度"
-              onInput={(e) =>
+              onInput={e =>
                 setTemperature(parseFloat((e.target as HTMLInputElement).value))
               }
             />
@@ -319,9 +335,9 @@ export default () => {
               minLength={3}
               value={temperature() / 100}
               placeholder="温度"
-              onChange={(e) =>
+              onChange={e =>
                 setTemperature(
-                  100 * parseFloat((e.target as HTMLInputElement).value)
+                  100 * parseFloat((e.target as HTMLInputElement).value),
                 )
               }
             />
@@ -329,5 +345,5 @@ export default () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
