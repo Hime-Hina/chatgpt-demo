@@ -45,7 +45,7 @@ export default (props: Props) => {
             <IconEnv />
             <span>系统设定：</span>
           </div>
-          <p class="my-2 leading-normal text-sm op-50 dark:op-60">指导助手，设定助手一般的行为。但影响较小。</p>
+          <p class="my-2 text-sm leading-normal op-50 dark:op-60">指导助手，设定助手一般的行为。但影响较小。</p>
           <div>
             <textarea
               ref={systemInputRef!}

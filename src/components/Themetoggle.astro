@@ -1,4 +1,4 @@
-<button id="themeToggle" class="flex items-center justify-center w-10 h-10 rounded-md border transition-colors hover:bg-slate/10">
+<button id="themeToggle" class="h-10 w-10 flex items-center justify-center border rounded-md transition-colors hover:bg-slate/10">
   <svg width="1.2rem" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
     <path
       class="sun"
@@ -47,7 +47,5 @@ const handleToggleClick = () => {
   const isDark = element.classList.contains('dark')
   localStorage.setItem('theme', isDark ? 'dark' : 'light')
 }
-document
-  .getElementById('themeToggle')
-  .addEventListener('click', handleToggleClick)
+document.getElementById('themeToggle')?.addEventListener('click', handleToggleClick)
 </script>

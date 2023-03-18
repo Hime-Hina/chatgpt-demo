@@ -52,22 +52,6 @@ export default () => {
         // prototypeOwnPropertyDescriptor.set?.call(inputRef, inputValue());
         inputRef.value = inputValue()
       })
-
-      // const prototypeOwnPropertyDescriptor = Object.getOwnPropertyDescriptor(
-      //   HTMLTextAreaElement.prototype,
-      //   "value"
-      // )!;
-      // Object.defineProperty(inputRef, "value", {
-      //   configurable: prototypeOwnPropertyDescriptor.configurable,
-      //   enumerable: prototypeOwnPropertyDescriptor.enumerable,
-      //   get: prototypeOwnPropertyDescriptor.get,
-      //   set: function (this: HTMLTextAreaElement, value: string) {
-      //     prototypeOwnPropertyDescriptor.set?.call(this, value);
-      //     const event = new Event("input", { bubbles: true });
-      //     this.dispatchEvent(event);
-      //   },
-      // });
-      // console.log(Object.getOwnPropertyDescriptor(inputRef, "value"));
     } catch (err) {
       console.error(err)
     }
@@ -173,8 +157,13 @@ export default () => {
         }
         done = readerDone
       }
-    } catch (e) {
+    } catch (_e) {
+      const e = _e as Error
       console.error(e)
+      setCurrentError({
+        code: e.name,
+        message: e.message,
+      })
       setLoading(false)
       setController(undefined)
       return
@@ -251,7 +240,7 @@ export default () => {
           <MessageItem
             role={message().role}
             message={message().content}
-            showRetry={() => !loading() && index === messageList().length - 1}
+            showRetry={() => (!currentError() && !loading() && index === messageList().length - 1)}
             onRetry={retryLastFetch}
           />
         )}
@@ -275,7 +264,7 @@ export default () => {
           </div>
         )}
       >
-        <div class="gen-text-wrapper" class:op-50={systemRoleEditing()}>
+        <div class:op-50={systemRoleEditing()} gen-text-wrapper>
           <textarea
             ref={inputRef!}
             disabled={systemRoleEditing()}
@@ -289,7 +278,7 @@ export default () => {
               setInputValue((e.target as HTMLTextAreaElement).value)
             }}
             rows="1"
-            class="gen-textarea"
+            gen-textarea
           />
           <button
             title="发送"
@@ -297,7 +286,7 @@ export default () => {
             disabled={systemRoleEditing()}
             gen-slate-btn
           >
-            <div class="i-carbon:send-filled text-5" />
+            <div class="i-carbon:send-filled text-4" />
           </button>
           <button
             title="清除记录"
@@ -310,13 +299,13 @@ export default () => {
         </div>
       </Show>
       <div>
-        <div class="flex flex-row justify-center">
-          <label for="temperature-range">
-            <span>发言随机程度：</span>
+        <div class="fc">
+          <label class="fc" for="temperature-range">
+            <span>tmpr: </span>
             <input
               type="range"
               id="temperature-range"
-              class="mx-2 rounded-sm bg-(slate op-15) resize-none base-focus placeholder:op-50 dark:(placeholder:op-30) scroll-pa-8px"
+              class="mx-2 resize-none scroll-pa-8px rounded-sm bg-(slate op-15) base-focus placeholder:op-50 dark:(placeholder:op-30)"
               min={0}
               max={200}
               value={temperature()}
@@ -328,7 +317,7 @@ export default () => {
             <input
               type="number"
               id="temperature-number"
-              class="mx-1 rounded-sm bg-(slate op-15) resize-none base-focus placeholder:op-50 dark:(placeholder:op-30) scroll-pa-8px"
+              class="mx-1 resize-none scroll-pa-8px rounded-sm bg-(slate op-15) base-focus placeholder:op-50 dark:(placeholder:op-30)"
               min={0}
               max={2}
               step={0.01}

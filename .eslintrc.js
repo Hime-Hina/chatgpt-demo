@@ -1,5 +1,9 @@
 module.exports = {
-  extends: ['@evan-yang', 'plugin:astro/recommended'],
+  extends: [
+    '@evan-yang',
+    'plugin:astro/recommended',
+    '@unocss',
+  ],
   rules: {
     'no-console': ['error', { allow: ['error'] }],
     'react/display-name': 'off',

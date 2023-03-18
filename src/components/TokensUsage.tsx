@@ -137,12 +137,12 @@ export const TokensUsage: Component<{
 
   return (
     <Show when={model.startsWith('gpt-3.5-turbo')}>
-      <div class="fc gap-3 font-extrabold">
-        <span>{getTokensUsageMemo().total_tokens} tokens</span>
+      <div class="fcc gap-3 font-extrabold">
+        <span tok-span-wrapper><span>{getTokensUsageMemo().total_tokens}</span> <span>词元</span></span>
         <span>=</span>
-        <span>{getTokensUsageMemo().prompt_tokens} prompt</span>
+        <span tok-span-wrapper><span>{getTokensUsageMemo().prompt_tokens}</span> <span>提示</span></span>
         <span>+</span>
-        <span>{getTokensUsageMemo().completion_tokens} completion</span>
+        <span tok-span-wrapper><span>{getTokensUsageMemo().completion_tokens}</span> <span>补全</span></span>
       </div>
     </Show>
   )
