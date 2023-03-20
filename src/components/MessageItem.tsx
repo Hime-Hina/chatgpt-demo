@@ -15,13 +15,14 @@ interface Props {
   onRetry?: () => void
 }
 
-const md = MarkdownIt('default', {
-  linkify: true,
-  breaks: true,
-  typographer: true,
-})
-  .use(mdKatex)
-  .use(mdHighlight)
+ const md = MarkdownIt('default', {
+   linkify: true,
+   breaks: true,
+   typographer: true,
+ })
+   .use(mdKatex)
+   .use(mdHighlight)
+ const fence = md.renderer.rules.fence!
 
 export default ({ role, message, showRetry, onRetry }: Props) => {
   const roleClass = {
@@ -31,7 +32,6 @@ export default ({ role, message, showRetry, onRetry }: Props) => {
   }
   const [source] = createSignal('')
   const { copy, copied } = useClipboard({ source, copiedDuring: 1000 })
-  const fence = md.renderer.rules.fence!
   md.renderer.rules.fence = (...args) => {
     const [tokens, idx] = args
     const token = tokens[idx]
