@@ -4,7 +4,6 @@ import {
   presetIcons,
   presetTypography,
   presetUno,
-  // transformerAttributifyJsx,
   transformerDirectives,
   transformerVariantGroup,
 } from 'unocss'
@@ -12,8 +11,7 @@ import {
 export default defineConfig({
   presets: [
     presetUno(),
-    presetAttributify({
-    }),
+    presetAttributify({}),
     presetIcons({
       scale: 1.1,
       cdn: 'https://esm.sh/',
@@ -25,7 +23,6 @@ export default defineConfig({
   transformers: [
     transformerVariantGroup(),
     transformerDirectives(),
-    // transformerAttributifyJsx(),
   ],
   shortcuts: [{
     'fc': 'flex justify-center',
