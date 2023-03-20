@@ -6,6 +6,7 @@ import MessageItem from './MessageItem'
 import SystemRoleSettings from './SystemRoleSettings'
 import ErrorMessageItem from './ErrorMessageItem'
 import { TokensUsage } from './TokensUsage'
+import IconRefresh from './icons/Refresh'
 import type { ChatMessage, ErrorMessage } from '@/types'
 
 export default () => {
@@ -229,24 +230,30 @@ export default () => {
   return (
     <div my-6>
       <SystemRoleSettings
-        canEdit={() => messageList().length === 0}
+        canEdit={() => true}
         systemRoleEditing={systemRoleEditing}
         setSystemRoleEditing={setSystemRoleEditing}
         currentSystemRoleSettings={currentSystemRoleSettings}
         setCurrentSystemRoleSettings={setCurrentSystemRoleSettings}
       />
       <Index each={messageList()}>
-        {(message, index) => (
+        {(message, _index) => (
           <MessageItem
             role={message().role}
             message={message().content}
-            showRetry={() => (!currentError() && !loading() && index === messageList().length - 1)}
-            onRetry={retryLastFetch}
           />
         )}
       </Index>
       {currentAssistantMessage() && (
         <MessageItem role="assistant" message={currentAssistantMessage} />
+      )}
+      {(!currentError() && !loading()) && (
+        <div class="mb-2 fcc px-3">
+          <div onClick={retryLastFetch} class="gpt-retry-btn">
+            <IconRefresh />
+            <span>重新生成</span>
+          </div>
+        </div>
       )}
       { currentError() && <ErrorMessageItem data={currentError()!} onRetry={retryLastFetch} /> }
       <TokensUsage

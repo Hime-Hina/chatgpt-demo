@@ -4,15 +4,12 @@ import MarkdownIt from 'markdown-it'
 import mdKatex from 'markdown-it-katex'
 import mdHighlight from 'markdown-it-highlightjs'
 import { useClipboard, useEventListener } from 'solidjs-use'
-import IconRefresh from './icons/Refresh'
 import type { Accessor } from 'solid-js'
 import type { ChatMessage } from '@/types'
 
 interface Props {
   role: ChatMessage['role']
   message: Accessor<string> | string
-  showRetry?: Accessor<boolean>
-  onRetry?: () => void
 }
 
  const md = MarkdownIt('default', {
@@ -24,7 +21,7 @@ interface Props {
    .use(mdHighlight)
  const fence = md.renderer.rules.fence!
 
-export default ({ role, message, showRetry, onRetry }: Props) => {
+export default ({ role, message }: Props) => {
   const roleClass = {
     system: 'bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300',
     user: 'bg-gradient-to-r from-purple-400 to-yellow-400',
@@ -89,14 +86,6 @@ export default ({ role, message, showRetry, onRetry }: Props) => {
         <div class={`shrink-0 w-7 h-7 mt-4 rounded-full op-80 ${roleClass[role]}`} />
         <div class="message min-w-0 flex-1 break-words prose" innerHTML={htmlString()} />
       </div>
-      {showRetry?.() && onRetry && (
-        <div class="mb-2 fie px-3">
-          <div onClick={onRetry} class="gpt-retry-btn">
-            <IconRefresh />
-            <span>重新生成</span>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
