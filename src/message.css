@@ -1,8 +1,3 @@
-/* .message>[relative=""]:hover,
-.message>[relative=""]>.copy-btn:hover {
-  display: flex;
-} */
-
 .message pre {
   background-color: #64748b10;
   font-size: 0.8rem;
