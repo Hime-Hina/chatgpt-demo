@@ -247,7 +247,7 @@ export default () => {
       {currentAssistantMessage() && (
         <MessageItem role="assistant" message={currentAssistantMessage} />
       )}
-      {(!currentError() && !loading()) && (
+      {(messageList().length > 0 && !currentError() && !loading()) && (
         <div class="mb-2 fcc px-3">
           <div onClick={retryLastFetch} class="gpt-retry-btn">
             <IconRefresh />
