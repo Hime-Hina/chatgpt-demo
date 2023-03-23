@@ -308,11 +308,11 @@ export default () => {
       <div>
         <div class="fc">
           <label class="fc" for="temperature-range">
-            <span>tmpr: </span>
+            <span class="min-w-3em w-10%">温度: </span>
             <input
               type="range"
               id="temperature-range"
-              class="mx-2 resize-none scroll-pa-8px rounded-sm bg-(slate op-15) base-focus placeholder:op-50 dark:(placeholder:op-30)"
+              class="mx-2 min-w-4em w-60% resize-none scroll-pa-8px rounded-sm bg-(slate op-15) base-focus placeholder:op-50 dark:(placeholder:op-30)"
               min={0}
               max={200}
               value={temperature()}
@@ -324,11 +324,10 @@ export default () => {
             <input
               type="number"
               id="temperature-number"
-              class="mx-1 resize-none scroll-pa-8px rounded-sm bg-(slate op-15) base-focus placeholder:op-50 dark:(placeholder:op-30)"
+              class="mx-1 min-w-3.5em w-30% resize-none scroll-pa-8px rounded-sm bg-(slate op-15) base-focus placeholder:op-50 dark:(placeholder:op-30)"
               min={0}
               max={2}
               step={0.01}
-              minLength={3}
               value={temperature() / 100}
               placeholder="温度"
               onChange={e =>
